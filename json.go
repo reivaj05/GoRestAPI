@@ -2,42 +2,49 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
-    "os"
+	"net/http"
 )
 
-
-var templates = template.Must(template.ParseFiles("edit.html", "view.html"))
-
-type User struct{
-    id int 'json:"id"'
-    name string 'json:"name"'
-    last_name string 'json:"last_name"'
-    email string 'json:"email"'
-    username string 'json:"username"'
+type User struct {
+	Id       int    `json:"id"`
+	Name     string `json:"name"`
+	LastName string `json:"lastName"`
+	Email    string `json:"email"`
+	Username string `json:"username"`
 }
 
 func loadUsers() ([]User, error) {
-    data, err := ioutil.ReadFile("users.json")
-    if err != nil{
-        return nil, err
-    }
-    var users []User
-    json.Unmarshal(data, &users)
-    return users, nil    
+	data, err := ioutil.ReadFile("users.json")
+	if err != nil {
+		return nil, err
+	}
+	var users []User
+	json.Unmarshal(data, &users)
+	return users, nil
 }
 
-func saveHandler(rw http.ResponseWriter, req *http.Request) {
+func allHandler(rw http.ResponseWriter, req *http.Request) {
+	users, err := loadUsers()
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var jsonResponse []byte
+	jsonResponse, err = json.Marshal(users)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
+	rw.Header().Set("Content-Type", "application/json")
+	rw.Write(jsonResponse)
 }
 
-func editHandler(rw http.ResponseWriter, req *http.Request) {
-
-}
 func main() {
-	/*http.HandleFunc("/view/", makeHandler(viewHandler))
-	  http.HandleFunc("/edit/", makeHandler(editHandler))*/
-	http.HandleFunc("/save/", saveHandler)
-	http.ListenAndServe(":8080", nil)
+	http.HandleFunc("/all/", allHandler)
+	fmt.Println("listening in port 8000")
+	http.ListenAndServe(":8000", nil)
 
 }
