@@ -25,6 +25,18 @@ func loadUsers() ([]User, error) {
 	return users, nil
 }
 
+func addDefaultHeaders(fn http.HandlerFunc) http.HandlerFunc {
+	return func(rw http.ResponseWriter, req *http.Request) {
+		if origin := req.Header.Get("Origin"); origin != "" {
+			rw.Header().Set("Access-Control-Allow-Origin", origin)
+		}
+		rw.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		rw.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
+		rw.Header().Set("Access-Control-Allow-Credentials", "true")
+		fn(rw, req)
+	}
+}
+
 func allHandler(rw http.ResponseWriter, req *http.Request) {
 	users, err := loadUsers()
 	if err != nil {
@@ -43,8 +55,8 @@ func allHandler(rw http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("/all/", allHandler)
-	fmt.Println("listening in port 8000")
-	http.ListenAndServe(":8000", nil)
+	http.HandleFunc("/all/", addDefaultHeaders(allHandler))
+	fmt.Println("listening in port 8080")
+	http.ListenAndServe(":8080", nil)
 
 }
