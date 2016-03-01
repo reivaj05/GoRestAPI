@@ -3,8 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/julienschmidt/httprouter"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"strconv"
 )
 
 type User struct {
@@ -15,36 +18,31 @@ type User struct {
 	Username string `json:"username"`
 }
 
+var users []User
+
 func loadUsers() ([]User, error) {
 	data, err := ioutil.ReadFile("users.json")
 	if err != nil {
 		return nil, err
 	}
-	var users []User
 	json.Unmarshal(data, &users)
 	return users, nil
 }
 
-func addDefaultHeaders(fn http.HandlerFunc) http.HandlerFunc {
-	return func(rw http.ResponseWriter, req *http.Request) {
+func addDefaultHeaders(fn func(http.ResponseWriter, *http.Request, httprouter.Params)) func(http.ResponseWriter, *http.Request, httprouter.Params) {
+	return func(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
 		if origin := req.Header.Get("Origin"); origin != "" {
 			rw.Header().Set("Access-Control-Allow-Origin", origin)
 		}
 		rw.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 		rw.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
 		rw.Header().Set("Access-Control-Allow-Credentials", "true")
-		fn(rw, req)
+		fn(rw, req, params)
 	}
 }
 
-func allHandler(rw http.ResponseWriter, req *http.Request) {
-	users, err := loadUsers()
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	var jsonResponse []byte
-	jsonResponse, err = json.Marshal(users)
+func allHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
+	jsonResponse, err := json.Marshal(users)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
@@ -54,9 +52,37 @@ func allHandler(rw http.ResponseWriter, req *http.Request) {
 	rw.Write(jsonResponse)
 }
 
-func main() {
-	http.HandleFunc("/all/", addDefaultHeaders(allHandler))
-	fmt.Println("listening in port 8080")
-	http.ListenAndServe(":8080", nil)
+func editUserHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
+	id, err := strconv.Atoi(params.ByName("id"))
+	var currentUser User
+	var jsonResponse []byte
+	for _, user := range users {
+		if id == user.Id {
+			currentUser = user
+			jsonResponse, err = json.Marshal(currentUser)
+			if err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
 
+			rw.Header().Set("Content-Type", "application/json")
+			rw.Write(jsonResponse)
+			return
+		}
+	}
+	http.Redirect(rw, req, "/all/", http.StatusFound)
+}
+
+func main() {
+	_, err := loadUsers()
+	if err != nil {
+		fmt.Println("Error loading the DB")
+		os.Exit(1)
+		return
+	}
+	router := httprouter.New()
+	router.GET("/all/", addDefaultHeaders(allHandler))
+	router.GET("/user/:id/edit/", addDefaultHeaders(editUserHandler))
+	fmt.Println("listening in port 8080")
+	http.ListenAndServe(":8080", router)
 }
