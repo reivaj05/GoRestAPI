@@ -54,23 +54,20 @@ func allHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Par
 
 func editUserHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
 	id, err := strconv.Atoi(params.ByName("id"))
-	var currentUser User
+	currentUser := User{}
 	var jsonResponse []byte
 	for _, user := range users {
 		if id == user.Id {
 			currentUser = user
-			jsonResponse, err = json.Marshal(currentUser)
-			if err != nil {
-				http.Error(rw, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			rw.Header().Set("Content-Type", "application/json")
-			rw.Write(jsonResponse)
-			return
 		}
 	}
-	http.Redirect(rw, req, "/all/", http.StatusFound)
+	jsonResponse, err = json.Marshal(currentUser)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	rw.Header().Set("Content-Type", "application/json")
+	rw.Write(jsonResponse)
 }
 
 func main() {
