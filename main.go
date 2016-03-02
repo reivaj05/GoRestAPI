@@ -70,6 +70,32 @@ func editUserHandler(rw http.ResponseWriter, req *http.Request, params httproute
 	rw.Write(jsonResponse)
 }
 
+func dummyHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
+}
+
+func updateUserHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
+	decoder := json.NewDecoder(req.Body)
+
+	var newUser User
+	err := decoder.Decode(&newUser)
+
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+	}
+
+	for i, user := range users {
+		if newUser.Id == user.Id {
+			users[i] = newUser
+		}
+	}
+	saveToJSON()
+}
+
+func saveToJSON() {
+	data, _ := json.Marshal(users)
+	ioutil.WriteFile("users.json", data, 0644)
+}
+
 func main() {
 	_, err := loadUsers()
 	if err != nil {
@@ -80,6 +106,8 @@ func main() {
 	router := httprouter.New()
 	router.GET("/all/", addDefaultHeaders(allHandler))
 	router.GET("/user/:id/edit/", addDefaultHeaders(editUserHandler))
+	router.OPTIONS("/users/update/", addDefaultHeaders(dummyHandler))
+	router.PUT("/users/update/", addDefaultHeaders(updateUserHandler))
 	fmt.Println("listening in port 8080")
 	http.ListenAndServe(":8080", router)
 }
