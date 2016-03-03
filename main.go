@@ -124,6 +124,9 @@ func main() {
 	router.OPTIONS("/users/create/", addDefaultHeaders(dummyHandler))
 	router.POST("/users/create/", addDefaultHeaders(createUserHandler))
 
+	router.OPTIONS("/users/delete/", addDefaultHeaders(dummyHandler))
+	router.POST("/users/delete/", addDefaultHeaders(createUserHandler))
+
 	fmt.Println("listening in port 8080")
 	http.ListenAndServe(":8080", router)
 }
