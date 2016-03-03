@@ -85,8 +85,18 @@ func updateUserHandler(rw http.ResponseWriter, req *http.Request, params httprou
 
 func createUserHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
 	newUser := loadFromJSON(rw, req)
-	newUser.Id = len(users) + 1
+	newUser.Id = users[len(users)-1].Id + 1
 	users = append(users, newUser)
+	saveToJSON()
+}
+
+func deleteUserHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
+	userToDelete := loadFromJSON(rw, req)
+	for i, user := range users {
+		if userToDelete.Id == user.Id {
+			users = append(users[:i], users[i+1:]...)
+		}
+	}
 	saveToJSON()
 }
 
@@ -95,7 +105,6 @@ func loadFromJSON(rw http.ResponseWriter, req *http.Request) User {
 
 	var newUser User
 	err := decoder.Decode(&newUser)
-
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 	}
