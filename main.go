@@ -107,13 +107,7 @@ func saveToJSON() {
 	ioutil.WriteFile("users.json", data, 0644)
 }
 
-func main() {
-	_, err := loadUsers()
-	if err != nil {
-		fmt.Println("Error loading the DB")
-		os.Exit(1)
-		return
-	}
+func setConfigRouter() {
 	router := httprouter.New()
 	router.GET("/all/", addDefaultHeaders(allHandler))
 	router.GET("/user/:id/edit/", addDefaultHeaders(editUserHandler))
@@ -125,8 +119,18 @@ func main() {
 	router.POST("/users/create/", addDefaultHeaders(createUserHandler))
 
 	router.OPTIONS("/users/delete/", addDefaultHeaders(dummyHandler))
-	router.POST("/users/delete/", addDefaultHeaders(createUserHandler))
+	router.POST("/users/delete/", addDefaultHeaders(deleteUserHandler))
 
-	fmt.Println("listening in port 8080")
 	http.ListenAndServe(":8080", router)
+}
+
+func main() {
+	_, err := loadUsers()
+	if err != nil {
+		fmt.Println("Error loading the DB")
+		os.Exit(1)
+		return
+	}
+	fmt.Println("listening in port 8080")
+	setConfigRouter()
 }
