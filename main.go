@@ -85,6 +85,7 @@ func updateUserHandler(rw http.ResponseWriter, req *http.Request, params httprou
 
 func createUserHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
 	newUser := loadFromJSON(rw, req)
+	newUser.Id = len(users) + 1
 	users = append(users, newUser)
 	saveToJSON()
 }
